@@ -1,14 +1,41 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+} from "react-native";
 import { Audio } from "expo-av";
 import axios from "axios";
+import { Colors, Fonts } from "../../constants/theme";
 
 const API_URL = "http://10.0.0.102:8000";
 
-export default function RecordScreen() {
+export default function HomeScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [memories, setMemories] = useState<any[]>([]);
+  const [loadingMemories, setLoadingMemories] = useState(true);
+
+  const icons = ["💬", "🍽️", "💡", "🏃", "📌", "🎯"];
+  const bgColors = [Colors.tealLight, Colors.pinkLight, Colors.amberLight, Colors.purpleLight];
+
+  async function fetchMemories() {
+    try {
+      const response = await axios.get(`${API_URL}/analytics/history`);
+      setMemories(response.data.slice(0, 5));
+    } catch (err) {
+      console.log("خطا در گرفتن خاطرات:", err);
+    } finally {
+      setLoadingMemories(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchMemories();
+  }, []);
 
   async function startRecording() {
     try {
@@ -41,10 +68,11 @@ export default function RecordScreen() {
         type: "audio/m4a",
       } as any);
 
-      const response = await axios.post(`${API_URL}/capture/audio`, formData, {
+      await axios.post(`${API_URL}/capture/audio`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setResult(response.data);
+      Alert.alert("انجام شد", "خاطره ثبت شد");
+      fetchMemories();
     } catch (err) {
       Alert.alert("خطا", "ارسال به سرور ناموفق بود");
     } finally {
@@ -53,67 +81,201 @@ export default function RecordScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>LifeOS</Text>
+    <View style={styles.wrapper}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.appTitle}>LifeOS</Text>
+
+        <View style={styles.tasksCard}>
+          <View style={styles.tasksBlob} />
+          <Text style={styles.tasksTitle}>کارهای امروز · ۲ از ۴ انجام‌شده</Text>
+          <View style={styles.taskRow}>
+            <View style={[styles.checkbox, styles.checkboxDone]}>
+              <Text style={styles.checkMark}>✓</Text>
+            </View>
+            <Text style={styles.taskText}>ارسال گزارش هفتگی</Text>
+          </View>
+          <View style={styles.taskRow}>
+            <View style={styles.checkbox} />
+            <Text style={styles.taskText}>ورزش صبحگاهی</Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>خاطرات امروز</Text>
+          <Text style={styles.sectionLink}>مشاهده همه</Text>
+        </View>
+
+        {loadingMemories && (
+          <Text style={{ color: Colors.textLight, fontSize: 12 }}>در حال بارگذاری...</Text>
+        )}
+
+        {!loadingMemories && memories.length === 0 && (
+          <Text style={{ color: Colors.textLight, fontSize: 12 }}>هنوز خاطره‌ای ثبت نشده</Text>
+        )}
+
+        {memories.map((m, i) => {
+          const activity = m.extracted?.activities?.[0] || "خاطره صوتی";
+          const person = m.extracted?.people?.[0];
+          return (
+            <View key={m.id} style={styles.memoryCard}>
+              <View style={[styles.memoryIcon, { backgroundColor: bgColors[i % bgColors.length] }]}>
+                <Text style={{ fontSize: 15 }}>{icons[i % icons.length]}</Text>
+              </View>
+              <View>
+                <Text style={styles.memoryTitle}>{activity}</Text>
+                <Text style={styles.memorySubtitle}>
+                  {person ? `با ${person}` : new Date(m.created_at).toLocaleDateString("fa-IR")}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </ScrollView>
 
       <TouchableOpacity
-        style={[styles.button, recording ? styles.buttonRecording : null]}
+        style={[styles.micButton, recording && styles.micButtonActive]}
         onPress={recording ? stopRecording : startRecording}
         disabled={isUploading}
+        activeOpacity={0.85}
       >
-        <Text style={styles.buttonText}>
-          {isUploading ? "در حال پردازش..." : recording ? "توقف ضبط" : "شروع ضبط"}
-        </Text>
+        <Text style={styles.micIcon}>{isUploading ? "..." : "🎙"}</Text>
       </TouchableOpacity>
-
-      {result && (
-        <View style={styles.result}>
-          <Text style={styles.resultLabel}>متن تشخیص داده‌شده:</Text>
-          <Text style={styles.resultText}>{result.transcript}</Text>
-        </View>
-      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
-    backgroundColor: "#fff",
+    backgroundColor: Colors.bg,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "600",
-    marginBottom: 40,
+  container: {
+    padding: 18,
+    paddingTop: 22,
+    paddingBottom: 110,
   },
-  button: {
-    backgroundColor: "#333",
-    paddingVertical: 20,
-    paddingHorizontal: 40,
-    borderRadius: 50,
+  appTitle: {
+    fontFamily: Fonts.heading,
+    fontSize: 20,
+    color: Colors.textDark,
+    marginBottom: 16,
   },
-  buttonRecording: {
-    backgroundColor: "#c0392b",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
-  },
-  result: {
-    marginTop: 40,
+  tasksCard: {
+    backgroundColor: Colors.textDark,
+    borderRadius: 20,
     padding: 16,
-    backgroundColor: "#f5f5f5",
-    borderRadius: 12,
-    width: "100%",
+    marginBottom: 16,
+    overflow: "hidden",
   },
-  resultLabel: {
-    fontWeight: "600",
+  tasksBlob: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    backgroundColor: Colors.coral,
+    borderRadius: 40,
+    top: -30,
+    left: -30,
+    opacity: 0.9,
+  },
+  tasksTitle: {
+    fontFamily: Fonts.heading,
+    fontSize: 13,
+    color: "#fff",
+    marginBottom: 10,
+  },
+  taskRow: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 9,
     marginBottom: 8,
   },
-  resultText: {
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.4)",
+  },
+  checkboxDone: {
+    backgroundColor: Colors.teal,
+    borderWidth: 0,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkMark: {
+    color: "#fff",
+    fontSize: 11,
+  },
+  taskText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: Fonts.bodyBold,
+  },
+  sectionHeader: {
+    flexDirection: "row-reverse",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 10,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.heading,
+    fontSize: 13,
+    color: Colors.textDark,
+  },
+  sectionLink: {
+    fontSize: 11,
+    color: Colors.textLight,
+  },
+  memoryCard: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 11,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 16,
+    padding: 12,
+    marginBottom: 9,
+  },
+  memoryIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  memoryTitle: {
+    fontSize: 12,
+    fontFamily: Fonts.bodyBold,
+    color: Colors.textDark,
     textAlign: "right",
+  },
+  memorySubtitle: {
+    fontSize: 10,
+    color: Colors.textLight,
+    textAlign: "right",
+    marginTop: 2,
+  },
+  micButton: {
+    position: "absolute",
+    bottom: 20,
+    alignSelf: "center",
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: Colors.coral,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: Colors.coral,
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  micButtonActive: {
+    backgroundColor: "#E53E3E",
+  },
+  micIcon: {
+    fontSize: 24,
   },
 });
