@@ -1,3 +1,4 @@
+from sqlalchemy import ForeignKey
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, ForeignKey
@@ -9,6 +10,7 @@ class TrackableItem(Base):
     __tablename__ = "trackable_items"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     category = Column(String, nullable=False)  # goal | medication | exercise | finance
     name = Column(String, nullable=False)
     config = Column(JSONB, default=dict)
@@ -19,6 +21,7 @@ class TrackableLog(Base):
     __tablename__ = "trackable_logs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     item_id = Column(UUID(as_uuid=True), ForeignKey("trackable_items.id"), nullable=True)
     category = Column(String, nullable=False)
     value = Column(JSONB, default=dict)

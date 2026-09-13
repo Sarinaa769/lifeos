@@ -1,9 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import axios from "axios";
+import api from "../../utils/api";
 import { Colors, Fonts } from "../../constants/theme";
-
-const API_URL = "http://10.0.0.102:8000";
 
 export default function FinanceScreen() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -11,7 +9,7 @@ export default function FinanceScreen() {
 
   async function fetchTransactions() {
     try {
-      const response = await axios.get(`${API_URL}/tracking/finance`);
+      const response = await api.get(`/tracking/finance`);
       setTransactions(response.data);
     } catch (err) {
       console.log("خطا در گرفتن تراکنش‌ها:", err);

@@ -1,27 +1,25 @@
 ﻿import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import axios from "axios";
+import api from "../../utils/api";
 import { Colors, Fonts } from "../../constants/theme";
 
-const API_URL = "http://10.0.0.102:8000";
 const dayLabels = ["ی", "د", "س", "چ", "پ", "ج", "ش"];
 
 export default function AnalyticsScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-
   const [coachInsight, setCoachInsight] = useState<string>("");
 
   useEffect(() => {
-    axios
-      .get(`${API_URL}/analytics/weekly`)
+    api
+      .get(`/analytics/weekly`)
       .then((res) => setData(res.data))
       .catch((err) => console.log("خطا:", err))
       .finally(() => setLoading(false));
 
-    axios
-      .get(`${API_URL}/analytics/coach`)
+    api
+      .get(`/analytics/coach`)
       .then((res) => setCoachInsight(res.data.insight))
       .catch((err) => console.log("خطا در Coach:", err));
   }, []);
@@ -88,9 +86,7 @@ export default function AnalyticsScreen() {
         <View style={styles.insightCard}>
           <Text style={styles.insightLabel}>💡 بینش این هفته</Text>
           <Text style={styles.insightText}>
-            {data.this_week_count > data.last_week_count
-              ? "این هفته فعال‌تر از هفته قبل بودی، همینطور ادامه بده."
-              : "این هفته ثبت‌های کمتری داشتی. سعی کن به زنجیره روزانه‌ت برگردی."}
+            {coachInsight || "در حال تحلیل الگوها..."}
           </Text>
         </View>
       </ScrollView>

@@ -1,9 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
-import axios from "axios";
+import api from "../../utils/api";
 import { Colors, Fonts } from "../../constants/theme";
-
-const API_URL = "http://10.0.0.102:8000";
 
 export default function HealthScreen() {
   const [tab, setTab] = useState<"medication" | "exercise">("medication");
@@ -14,8 +12,8 @@ export default function HealthScreen() {
   async function fetchData() {
     try {
       const [medRes, exRes] = await Promise.all([
-        axios.get(`${API_URL}/tracking/items/medication`),
-        axios.get(`${API_URL}/tracking/exercise`),
+        api.get(`/tracking/items/medication`),
+        api.get(`/tracking/exercise`),
       ]);
       setMedications(medRes.data);
       setExerciseLogs(exRes.data);

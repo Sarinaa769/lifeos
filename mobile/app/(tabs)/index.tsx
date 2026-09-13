@@ -8,10 +8,8 @@ import {
   ScrollView,
 } from "react-native";
 import { Audio } from "expo-av";
-import axios from "axios";
+import api from "../../utils/api";
 import { Colors, Fonts } from "../../constants/theme";
-
-const API_URL = "http://10.0.0.102:8000";
 
 export default function HomeScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -24,7 +22,7 @@ export default function HomeScreen() {
 
   async function fetchMemories() {
     try {
-      const response = await axios.get(`${API_URL}/analytics/history`);
+      const response = await api.get(`/analytics/history`);
       setMemories(response.data.slice(0, 5));
     } catch (err) {
       console.log("خطا در گرفتن خاطرات:", err);
@@ -68,7 +66,7 @@ export default function HomeScreen() {
         type: "audio/m4a",
       } as any);
 
-      await axios.post(`${API_URL}/capture/audio`, formData, {
+      await api.post(`/capture/audio`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       Alert.alert("انجام شد", "خاطره ثبت شد");

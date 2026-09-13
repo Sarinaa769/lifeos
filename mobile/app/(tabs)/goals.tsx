@@ -1,9 +1,7 @@
 ﻿import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import axios from "axios";
+import api from "../../utils/api";
 import { Colors, Fonts } from "../../constants/theme";
-
-const API_URL = "http://10.0.0.102:8000";
 
 const cardColors = [
   { bg: [Colors.purple, Colors.purpleDark] },
@@ -17,7 +15,7 @@ export default function GoalsScreen() {
 
   async function fetchGoals() {
     try {
-      const response = await axios.get(`${API_URL}/tracking/items/goal`);
+      const response = await api.get(`/tracking/items/goal`);
       setGoals(response.data);
     } catch (err) {
       console.log("خطا در گرفتن اهداف:", err);
